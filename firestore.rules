@@ -1,0 +1,142 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {uid}
+    // Fields:
+    //   - uid: string (required) - User's unique ID
+    //   - displayName: string (optional) - User's display name
+    //   - email: string (required) - User's email address
+    //   - role: string (required, ['admin', 'staff', 'user']) - User's role
+    //   - createdAt: timestamp (required) - Creation time
+    //
+    // Collection: leads
+    // Fields:
+    //   - name: string (required, <100 chars)
+    //   - phone: string (required, <20 chars)
+    //   - source: string (optional)
+    //   - status: string (required, ['new', 'contacted', 'qualified', 'lost'])
+    //   - assignedTo: string (optional) - uid reference
+    //   - createdAt: timestamp (required)
+    //
+    // [Other collections following similar validation patterns]
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "TonyEarth0103@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isStaff() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'staff']);
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return hasRequiredFields(['uid', 'email', 'role', 'createdAt']) &&
+             data.uid == request.auth.uid &&
+             data.email == request.auth.token.email &&
+             data.role in ['admin', 'staff', 'user'] &&
+             data.displayName is string && data.displayName.size() < 100;
+    }
+
+    function isValidLead(data) {
+      return hasRequiredFields(['name', 'phone', 'status', 'createdAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.phone is string && data.phone.size() < 20 &&
+             data.status in ['new', 'contacted', 'qualified', 'lost'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      // Users can only read their own data, unless they are staff
+      allow read: if isOwner(userId) || isStaff();
+      
+      // Creating a user profile requires matching the auth UID
+      allow create: if isOwner(userId) && isValidUser(request.resource.data) && 
+                      (request.resource.data.role == 'user' || isAdmin());
+      
+      // Self-update is limited to non-sensitive fields
+      allow update: if (isOwner(userId) && 
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName']) &&
+                        isValidUser(request.resource.data)) || isAdmin();
+    }
+
+    match /leads/{leadId} {
+      allow read: if isStaff();
+      allow create: if isStaff() && isValidLead(request.resource.data);
+      allow update: if isStaff() && isValidLead(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /certifications/{certId} {
+      allow read: if isStaff() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isStaff();
+    }
+
+    match /practitioners/{pracId} {
+      allow read: if isAuthenticated(); // All practitioners are visible to authenticated users
+      allow create: if isStaff() || (isAuthenticated() && request.resource.data.userId == request.auth.uid);
+      allow update: if isStaff() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+    }
+
+    match /mentorships/{mentId} {
+      allow read: if isStaff() || (isAuthenticated() && (resource.data.mentorId == request.auth.uid || resource.data.apprenticeId == request.auth.uid));
+      allow write: if isStaff();
+    }
+
+    match /templates/{tempId} {
+      allow read: if isAuthenticated();
+      allow write: if isStaff();
+    }
+
+    match /city_centers/{cityId} {
+      allow read: if isAuthenticated();
+      allow write: if isStaff();
+    }
+
+    // Default deny
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Google AI Studio App</title>
+    <script>
+      // Defensive check for window.fetch to prevent "Cannot set property fetch of #<Window> which has only a getter"
+      if (typeof window !== 'undefined') {
+        const originalFetch = window.fetch;
+        try {
+          // By explicitly defining it on the window instance, 
+          // we shadow any getter-only property on Window.prototype that causes assignments to throw.
+          Object.defineProperty(window, 'fetch', {
+            get: () => originalFetch,
+            set: (val) => { 
+              console.warn('Blocked attempt to override window.fetch');
+            },
+            configurable: true,
+            enumerable: true
+          });
+        } catch (e) {
+          console.error('Failed to apply fetch defensive patch', e);
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

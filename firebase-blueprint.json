@@ -1,0 +1,123 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Standard platform user",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "staff", "user"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Lead": {
+      "title": "Lead",
+      "description": "Sales lead or prospect",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "source": { "type": "string" },
+        "status": { "type": "string", "enum": ["new", "contacted", "qualified", "lost"] },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "phone", "status"]
+    },
+    "Certification": {
+      "title": "Certification",
+      "description": "Practitioner certification request",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "type": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "documents": { "type": "array" },
+        "submittedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "type", "status"]
+    },
+    "Practitioner": {
+      "title": "Practitioner",
+      "description": "Qualified worker profile",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "skills": { "type": "array" },
+        "level": { "type": "string" },
+        "rating": { "type": "number" },
+        "experience": { "type": "string" }
+      },
+      "required": ["userId"]
+    },
+    "MentorApprentice": {
+      "title": "MentorApprentice",
+      "description": "Mentor-Apprentice relationship",
+      "type": "object",
+      "properties": {
+        "mentorId": { "type": "string" },
+        "apprenticeId": { "type": "string" },
+        "startDate": { "type": "string", "format": "date" },
+        "status": { "type": "string" }
+      },
+      "required": ["mentorId", "apprenticeId"]
+    },
+    "Template": {
+      "title": "Template",
+      "description": "Document or communication template",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "content": { "type": "string" },
+        "category": { "type": "string" }
+      },
+      "required": ["name", "content"]
+    },
+    "CityCenter": {
+      "title": "CityCenter",
+      "description": "Regional operations center",
+      "type": "object",
+      "properties": {
+        "cityName": { "type": "string" },
+        "managerId": { "type": "string" },
+        "address": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "required": ["cityName", "status"]
+    }
+  },
+  "firestore": {
+    "users": {
+      "schema": "User",
+      "description": "Collection of all system users"
+    },
+    "leads": {
+      "schema": "Lead",
+      "description": "Sales leads and prospect management"
+    },
+    "certifications": {
+      "schema": "Certification",
+      "description": "Practitioner certification requests"
+    },
+    "practitioners": {
+      "schema": "Practitioner",
+      "description": "Verified practitioner profiles"
+    },
+    "mentorships": {
+      "schema": "MentorApprentice",
+      "description": "Hierarchical relationships"
+    },
+    "templates": {
+      "schema": "Template",
+      "description": "Shared templates"
+    },
+    "city_centers": {
+      "schema": "CityCenter",
+      "description": "Regional operations"
+    }
+  }
+}
