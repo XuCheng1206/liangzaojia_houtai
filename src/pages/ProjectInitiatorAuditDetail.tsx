@@ -103,7 +103,8 @@ export default function ProjectInitiatorAuditDetail() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
-      const newAttachments: Attachment[] = Array.from(files).map(file => ({
+      const filesArr = Array.from(files) as File[];
+      const newAttachments: Attachment[] = filesArr.map(file => ({
         name: file.name,
         type: file.type.startsWith('image/') ? 'image' : 'file',
         url: URL.createObjectURL(file)

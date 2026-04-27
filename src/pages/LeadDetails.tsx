@@ -133,7 +133,8 @@ export default function LeadDetails() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const newAttachments: Attachment[] = [];
-      Array.from(e.target.files).forEach(file => {
+      const filesArr = Array.from(e.target.files) as File[];
+      filesArr.forEach(file => {
         const isImage = file.type.startsWith('image/');
         newAttachments.push({
           name: file.name,

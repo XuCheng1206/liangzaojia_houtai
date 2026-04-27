@@ -50,7 +50,7 @@ export default function PractitionerManagement() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-[20px] font-semibold text-slate-900">从业者名录</h1>
+          <h1 className="text-[20px] font-semibold text-slate-900">人才库</h1>
         </div>
         <div className="flex gap-3">
           <button className="bg-[#2563eb] text-white px-4 py-2 rounded text-[13px] font-medium hover:bg-blue-700 transition-all">

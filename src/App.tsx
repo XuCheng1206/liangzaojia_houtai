@@ -212,10 +212,10 @@ const AppLayout = () => {
   const menuItems = [
     { title: '控制台', path: '/', icon: LayoutDashboard },
     { title: '用户管理', path: '/users', icon: Users },
-    { title: '线索管理', path: '/leads', icon: Target },
     { title: '认证管理', path: '/certs', icon: ShieldCheck },
-    { title: '从业者管理', path: '/practitioners', icon: Briefcase },
+    { title: '人才库管理', path: '/practitioners', icon: Briefcase },
     { title: '项目发起人', path: '/initiators', icon: UsersRound },
+    { title: '线索管理', path: '/leads', icon: Target },
     { title: '模板管理', path: '/templates', icon: LayoutTemplate },
     { title: '城市运营', path: '/cities', icon: MapPin },
     { title: '内容运营', path: '/content', icon: LayoutTemplate },
