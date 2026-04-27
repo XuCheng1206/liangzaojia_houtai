@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   UsersRound, 
   Search, 
@@ -150,9 +151,12 @@ export default function ProjectInitiatorManagement() {
                     )}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button className="px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-50 transition-all shadow-sm">
+                    <Link 
+                      to={`/initiators/${initiator.id}`}
+                      className="inline-block px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-50 transition-all shadow-sm"
+                    >
                       审核详情
-                    </button>
+                    </Link>
                   </td>
                 </tr>
               )) : (
