@@ -10,7 +10,8 @@ import {
   Eye,
   Clock,
   User,
-  MoreVertical
+  MoreVertical,
+  Settings
 } from 'lucide-react';
 
 type WorkerRole = '工长' | '设计师' | '拆除工' | '水电工' | '木工' | '泥瓦工' | '油漆工';
@@ -88,9 +89,18 @@ export default function CertificationManagement() {
   return (
     <div className="p-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">认证审核</h1>
-          <p className="text-slate-500 text-sm mt-1">审核工长、设计师及各类技工的从业资质信息</p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">认证审核</h1>
+            <p className="text-slate-500 text-sm mt-1">审核工长、设计师及各类技工的从业资质信息</p>
+          </div>
+          <button 
+            onClick={() => navigate('/training-config')}
+            className="ml-4 flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all shadow-sm"
+          >
+            <Settings size={16} className="text-blue-600" />
+            培训学习配置
+          </button>
         </div>
         <div className="flex bg-white rounded-xl p-1 border border-slate-200 shadow-sm">
           {(['all', 'pending', 'approved', 'rejected'] as const).map(tab => (

@@ -145,7 +145,7 @@ export default function UserManagement() {
                 <th className="px-6 py-3 text-[12px] font-bold text-slate-500 border-b border-slate-200 uppercase tracking-wider">
                   {activeTab === 'C' ? '注册城市' : '工种 / 城市'}
                 </th>
-                <th className="px-6 py-3 text-[12px] font-bold text-slate-500 border-b border-slate-200 uppercase tracking-wider">创建时间</th>
+                <th className="px-6 py-3 text-[12px] font-bold text-slate-500 border-b border-slate-200 uppercase tracking-wider">注册时间</th>
                 <th className="px-6 py-3 text-[12px] font-bold text-slate-500 border-b border-slate-200 uppercase tracking-wider text-right">操作</th>
               </tr>
             </thead>

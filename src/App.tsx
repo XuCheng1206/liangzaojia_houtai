@@ -31,6 +31,7 @@ import CertificationAuditDetail from './pages/CertificationAuditDetail';
 import PractitionerManagement from './pages/PractitionerManagement';
 import ProjectInitiatorManagement from './pages/ProjectInitiatorManagement';
 import ProjectInitiatorAuditDetail from './pages/ProjectInitiatorAuditDetail';
+import TrainingConfig from './pages/TrainingConfig';
 import TemplateManagement from './pages/TemplateManagement';
 import CityOperations from './pages/CityOperations';
 import SystemSettings from './pages/SystemSettings';
@@ -320,6 +321,7 @@ const AppLayout = () => {
                 <Route path="/certs" element={<CertificationManagement />} />
                 <Route path="/certs/:id" element={<CertificationAuditDetail />} />
                 <Route path="/practitioners" element={<PractitionerManagement />} />
+                <Route path="/training-config" element={<TrainingConfig />} />
                 <Route path="/initiators" element={<ProjectInitiatorManagement />} />
                 <Route path="/initiators/:id" element={<ProjectInitiatorAuditDetail />} />
                 <Route path="/templates" element={<TemplateManagement />} />
