@@ -20,10 +20,10 @@ import {
 } from 'lucide-react';
 
 const mockEmployees = [
-  { id: '1', name: '李四', role: '销售经理' },
-  { id: '2', name: '张三', role: '资深设计师' },
-  { id: '3', name: '王五', role: '销售专员' },
-  { id: '4', name: '赵六', role: '客户经理' }
+  { id: '1', name: '李四', phone: '138****0001' },
+  { id: '2', name: '张三', phone: '139****0002' },
+  { id: '3', name: '王五', phone: '137****0003' },
+  { id: '4', name: '赵六', phone: '136****0004' }
 ];
 
 interface Attachment {
@@ -38,8 +38,8 @@ const getMockLeadDetails = (id: string) => ({
   name: '王家梁',
   phone: '138-xxxx-8888',
   status: '转化中',
-  source: '百度搜索',
-  provider: '-',
+  source: id === '2' ? '项目发起人' : (id === '1' ? '百度搜索' : '线下活动'),
+  provider: id === '2' ? '陈先生' : '-',
   assignedTo: ['李四'],
   createdAt: '2026-04-16 10:20',
   projectName: '绿地世纪城3期装修',
@@ -82,23 +82,86 @@ export default function LeadDetails() {
   const [history, setHistory] = useState(lead.history);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showAssignError, setShowAssignError] = useState(false);
   const [currentAssignees, setCurrentAssignees] = useState<string[]>(lead.assignedTo);
   const [assignSearch, setAssignSearch] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [editedLead, setEditedLead] = useState(lead);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [toast, setToast] = useState<{ message: string, type: 'success' | 'info' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'info') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleConfirmAssign = () => {
+    if (currentAssignees.length === 0) {
+      setShowAssignError(true);
+      showToast('请选择分配人员', 'info');
+      return;
+    }
+    setShowAssignError(false);
+    setLead({ ...lead, assignedTo: currentAssignees });
+    setShowAssignModal(false);
+    showToast('分配成功', 'success');
+  };
+
+  const handleStatusChange = (newStatus: string) => {
+    setLead({ ...lead, status: newStatus });
+    showToast(`线索状态已变更为：${newStatus}`, 'success');
+  };
 
   const handleSaveEdit = () => {
+    // Define the fields to validate
+    const requiredFields: { key: keyof typeof editedLead; label: string }[] = [
+      { key: 'name', label: '客户姓名' },
+      { key: 'phone', label: '联系电话' },
+      { key: 'projectName', label: '项目名称' },
+      { key: 'projectLocation', label: '项目位置' },
+      { key: 'floorArea', label: '户型面积' },
+      { key: 'styleNeeds', label: '风格倾向' },
+      { key: 'budgetNeeds', label: '预算需求' },
+      { key: 'timelineNeeds', label: '工期需求' },
+      { key: 'functionalNeeds', label: '功能需求' },
+      { key: 'remarks', label: '备注说明' },
+      { key: 'source', label: '线索来源' },
+      { key: 'provider', label: '提供人' }
+    ];
+
+    // Check for missing fields
+    const missingKeys = requiredFields
+      .filter(field => {
+        const value = editedLead[field.key];
+        return typeof value === 'string' ? !value.trim() : !value;
+      })
+      .map(f => f.key);
+
+    if (missingKeys.length > 0) {
+      setValidationErrors(missingKeys as string[]);
+      const labels = requiredFields
+        .filter(f => missingKeys.includes(f.key))
+        .map(f => f.label)
+        .join('、');
+      
+      showToast(`请填充：${labels}`, 'info');
+      return;
+    }
+
+    setValidationErrors([]);
     setLead(editedLead);
     setIsEditing(false);
+    showToast('保存成功', 'success');
   };
 
   const handleCancelEdit = () => {
     setEditedLead(lead);
+    setValidationErrors([]);
     setIsEditing(false);
   };
   
   const filteredEmployees = mockEmployees.filter(emp => 
-    emp.name.includes(assignSearch) || emp.role.includes(assignSearch)
+    emp.name.includes(assignSearch) || emp.phone.includes(assignSearch)
   );
 
   const toggleAssignee = (name: string) => {
@@ -170,8 +233,11 @@ export default function LeadDetails() {
               <div className="relative flex items-center">
                 <select 
                   value={lead.status}
-                  onChange={(e) => setLead({ ...lead, status: e.target.value })}
-                  className={`pl-2.5 pr-7 py-1 rounded text-[12px] font-bold appearance-none cursor-pointer outline-none transition-colors border border-transparent hover:border-slate-300 ${
+                  onChange={(e) => handleStatusChange(e.target.value)}
+                  disabled={!isEditing}
+                  className={`pl-2.5 pr-7 py-1 rounded text-[12px] font-bold appearance-none outline-none transition-all border border-transparent ${
+                    !isEditing ? 'cursor-default' : 'cursor-pointer hover:border-slate-300'
+                  } ${
                     lead.status === '待对接' ? 'bg-purple-50 text-purple-600' :
                     lead.status === '待分配' ? 'bg-amber-50 text-amber-600' :
                     lead.status === '转化中' ? 'bg-blue-50 text-blue-600' :
@@ -185,13 +251,15 @@ export default function LeadDetails() {
                   <option value="已转化" className="bg-white text-slate-800">已转化</option>
                   <option value="已关闭" className="bg-white text-slate-800">已关闭</option>
                 </select>
-                <ChevronDown className={`absolute right-1.5 w-3.5 h-3.5 pointer-events-none ${
-                    lead.status === '待对接' ? 'text-purple-600' :
-                    lead.status === '待分配' ? 'text-amber-600' :
-                    lead.status === '转化中' ? 'text-blue-600' :
-                    lead.status === '已转化' ? 'text-emerald-600' :
-                    'text-slate-500'
-                }`} />
+                {isEditing && (
+                  <ChevronDown className={`absolute right-1.5 w-3.5 h-3.5 pointer-events-none ${
+                      lead.status === '待对接' ? 'text-purple-600' :
+                      lead.status === '待分配' ? 'text-amber-600' :
+                      lead.status === '转化中' ? 'text-blue-600' :
+                      lead.status === '已转化' ? 'text-emerald-600' :
+                      'text-slate-500'
+                  }`} />
+                )}
               </div>
             </div>
             <p className="text-slate-500 text-sm mt-1">编号：L-202604-{lead.id} · 创建于 {lead.createdAt}</p>
@@ -245,7 +313,14 @@ export default function LeadDetails() {
               <div>
                 <p className="text-sm text-slate-400 mb-1">客户姓名</p>
                 {isEditing ? (
-                  <input type="text" value={editedLead.name} onChange={e => setEditedLead({...editedLead, name: e.target.value})} className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:border-blue-500 outline-none" />
+                  <input 
+                    type="text" 
+                    value={editedLead.name} 
+                    onChange={e => setEditedLead({...editedLead, name: e.target.value})} 
+                    className={`w-full px-3 py-1.5 border rounded-lg text-sm bg-slate-50 focus:bg-white focus:border-blue-500 outline-none transition-all ${
+                      validationErrors.includes('name') ? 'border-rose-500 bg-rose-50 ring-2 ring-rose-500/20' : 'border-slate-200'
+                    }`} 
+                  />
                 ) : (
                   <p className="font-bold text-slate-800">{lead.name}</p>
                 )}
@@ -253,7 +328,14 @@ export default function LeadDetails() {
               <div>
                 <p className="text-sm text-slate-400 mb-1">联系电话</p>
                 {isEditing ? (
-                  <input type="text" value={editedLead.phone} onChange={e => setEditedLead({...editedLead, phone: e.target.value})} className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:border-blue-500 outline-none" />
+                  <input 
+                    type="text" 
+                    value={editedLead.phone} 
+                    onChange={e => setEditedLead({...editedLead, phone: e.target.value})} 
+                    className={`w-full px-3 py-1.5 border rounded-lg text-sm bg-slate-50 focus:bg-white focus:border-blue-500 outline-none transition-all ${
+                      validationErrors.includes('phone') ? 'border-rose-500 bg-rose-50 ring-2 ring-rose-500/20' : 'border-slate-200'
+                    }`} 
+                  />
                 ) : (
                   <p className="font-bold text-slate-800 flex items-center gap-2">
                     {lead.phone}
@@ -266,7 +348,14 @@ export default function LeadDetails() {
               <div>
                 <p className="text-sm text-slate-400 mb-1">项目名称</p>
                 {isEditing ? (
-                  <input type="text" value={editedLead.projectName} onChange={e => setEditedLead({...editedLead, projectName: e.target.value})} className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:border-blue-500 outline-none" />
+                  <input 
+                    type="text" 
+                    value={editedLead.projectName} 
+                    onChange={e => setEditedLead({...editedLead, projectName: e.target.value})} 
+                    className={`w-full px-3 py-1.5 border rounded-lg text-sm bg-slate-50 focus:bg-white focus:border-blue-500 outline-none transition-all ${
+                      validationErrors.includes('projectName') ? 'border-rose-500 bg-rose-50 ring-2 ring-rose-500/20' : 'border-slate-200'
+                    }`} 
+                  />
                 ) : (
                   <p className="font-medium text-slate-800">{lead.projectName}</p>
                 )}
@@ -274,7 +363,14 @@ export default function LeadDetails() {
               <div>
                 <p className="text-sm text-slate-400 mb-1">项目位置</p>
                 {isEditing ? (
-                  <input type="text" value={editedLead.projectLocation} onChange={e => setEditedLead({...editedLead, projectLocation: e.target.value})} className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:border-blue-500 outline-none" />
+                  <input 
+                    type="text" 
+                    value={editedLead.projectLocation} 
+                    onChange={e => setEditedLead({...editedLead, projectLocation: e.target.value})} 
+                    className={`w-full px-3 py-1.5 border rounded-lg text-sm bg-slate-50 focus:bg-white focus:border-blue-500 outline-none transition-all ${
+                      validationErrors.includes('projectLocation') ? 'border-rose-500 bg-rose-50 ring-2 ring-rose-500/20' : 'border-slate-200'
+                    }`} 
+                  />
                 ) : (
                   <p className="font-medium text-slate-800 flex items-start gap-1">
                     <MapPin size={16} className="text-slate-400 mt-0.5 shrink-0" />
@@ -292,34 +388,74 @@ export default function LeadDetails() {
             </h2>
             
             <div className="grid grid-cols-2 md:grid-cols-4 gap-y-6 gap-x-4 mb-6">
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                <p className="text-[11px] text-slate-400 font-bold uppercase mb-1">户型面积</p>
+              <div className={`p-3 rounded-xl border transition-all ${
+                validationErrors.includes('floorArea') ? 'bg-rose-50 border-rose-200 ring-4 ring-rose-500/5' : 'bg-slate-50 border-slate-100'
+              }`}>
+                <p className={`text-[11px] font-bold uppercase mb-1 ${validationErrors.includes('floorArea') ? 'text-rose-500' : 'text-slate-400'}`}>户型面积</p>
                 {isEditing ? (
-                  <div className="flex items-center gap-1"><input type="text" value={editedLead.floorArea} onChange={e => setEditedLead({...editedLead, floorArea: e.target.value})} className="w-full px-2 py-1 border border-slate-200 rounded text-sm bg-white outline-none" /></div>
+                  <div className="flex items-center gap-1">
+                    <input 
+                      type="text" 
+                      value={editedLead.floorArea} 
+                      onChange={e => setEditedLead({...editedLead, floorArea: e.target.value})} 
+                      className={`w-full px-2 py-1 border rounded text-sm bg-white outline-none focus:border-blue-500 transition-all ${
+                        validationErrors.includes('floorArea') ? 'border-rose-500 shadow-[0_0_0_2px_rgba(244,63,94,0.1)]' : 'border-slate-200'
+                      }`} 
+                    />
+                  </div>
                 ) : (
                   <p className="font-bold text-slate-800 text-sm">{lead.floorArea} ㎡</p>
                 )}
               </div>
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                <p className="text-[11px] text-slate-400 font-bold uppercase mb-1">风格倾向</p>
+              <div className={`p-3 rounded-xl border transition-all ${
+                validationErrors.includes('styleNeeds') ? 'bg-rose-50 border-rose-200 ring-4 ring-rose-500/5' : 'bg-slate-50 border-slate-100'
+              }`}>
+                <p className={`text-[11px] font-bold uppercase mb-1 ${validationErrors.includes('styleNeeds') ? 'text-rose-500' : 'text-slate-400'}`}>风格倾向</p>
                 {isEditing ? (
-                  <input type="text" value={editedLead.styleNeeds} onChange={e => setEditedLead({...editedLead, styleNeeds: e.target.value})} className="w-full px-2 py-1 border border-slate-200 rounded text-sm bg-white outline-none" />
+                  <input 
+                    type="text" 
+                    value={editedLead.styleNeeds} 
+                    onChange={e => setEditedLead({...editedLead, styleNeeds: e.target.value})} 
+                    className={`w-full px-2 py-1 border rounded text-sm bg-white outline-none focus:border-blue-500 transition-all ${
+                      validationErrors.includes('styleNeeds') ? 'border-rose-500 shadow-[0_0_0_2px_rgba(244,63,94,0.1)]' : 'border-slate-200'
+                    }`} 
+                  />
                 ) : (
                   <p className="font-bold text-slate-800 text-sm">{lead.styleNeeds}</p>
                 )}
               </div>
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                <p className="text-[11px] text-slate-400 font-bold uppercase mb-1">预算需求</p>
+              <div className={`p-3 rounded-xl border transition-all ${
+                validationErrors.includes('budgetNeeds') ? 'bg-rose-50 border-rose-200 ring-4 ring-rose-500/5' : 'bg-slate-50 border-slate-100'
+              }`}>
+                <p className={`text-[11px] font-bold uppercase mb-1 ${validationErrors.includes('budgetNeeds') ? 'text-rose-500' : 'text-slate-400'}`}>预算需求</p>
                 {isEditing ? (
-                  <div className="flex items-center gap-1"><input type="text" value={editedLead.budgetNeeds} onChange={e => setEditedLead({...editedLead, budgetNeeds: e.target.value})} className="w-full px-2 py-1 border border-slate-200 rounded text-sm bg-white outline-none" /></div>
+                  <div className="flex items-center gap-1">
+                    <input 
+                      type="text" 
+                      value={editedLead.budgetNeeds} 
+                      onChange={e => setEditedLead({...editedLead, budgetNeeds: e.target.value})} 
+                      className={`w-full px-2 py-1 border rounded text-sm bg-white outline-none focus:border-blue-500 transition-all ${
+                        validationErrors.includes('budgetNeeds') ? 'border-rose-500 shadow-[0_0_0_2px_rgba(244,63,94,0.1)]' : 'border-slate-200'
+                      }`} 
+                    />
+                  </div>
                 ) : (
                   <p className="font-bold text-slate-800 text-sm">{lead.budgetNeeds} 万元</p>
                 )}
               </div>
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                <p className="text-[11px] text-slate-400 font-bold uppercase mb-1">工期需求</p>
+              <div className={`p-3 rounded-xl border transition-all ${
+                validationErrors.includes('timelineNeeds') ? 'bg-rose-50 border-rose-200 ring-4 ring-rose-500/5' : 'bg-slate-50 border-slate-100'
+              }`}>
+                <p className={`text-[11px] font-bold uppercase mb-1 ${validationErrors.includes('timelineNeeds') ? 'text-rose-500' : 'text-slate-400'}`}>工期需求</p>
                 {isEditing ? (
-                  <input type="text" value={editedLead.timelineNeeds} onChange={e => setEditedLead({...editedLead, timelineNeeds: e.target.value})} className="w-full px-2 py-1 border border-slate-200 rounded text-sm bg-white outline-none" />
+                  <input 
+                    type="text" 
+                    value={editedLead.timelineNeeds} 
+                    onChange={e => setEditedLead({...editedLead, timelineNeeds: e.target.value})} 
+                    className={`w-full px-2 py-1 border rounded text-sm bg-white outline-none focus:border-blue-500 transition-all ${
+                      validationErrors.includes('timelineNeeds') ? 'border-rose-500 shadow-[0_0_0_2px_rgba(244,63,94,0.1)]' : 'border-slate-200'
+                    }`} 
+                  />
                 ) : (
                   <p className="font-bold text-slate-800 text-sm truncate" title={lead.timelineNeeds}>{lead.timelineNeeds}</p>
                 )}
@@ -328,9 +464,15 @@ export default function LeadDetails() {
 
             <div className="space-y-4">
               <div>
-                <h3 className="text-sm font-bold text-slate-700 mb-2">详细功能需求：</h3>
+                <h3 className={`text-sm font-bold mb-2 ${validationErrors.includes('functionalNeeds') ? 'text-rose-500' : 'text-slate-700'}`}>详细功能需求：</h3>
                 {isEditing ? (
-                  <textarea value={editedLead.functionalNeeds} onChange={e => setEditedLead({...editedLead, functionalNeeds: e.target.value})} className="w-full h-24 p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:border-blue-500 outline-none resize-none" />
+                  <textarea 
+                    value={editedLead.functionalNeeds} 
+                    onChange={e => setEditedLead({...editedLead, functionalNeeds: e.target.value})} 
+                    className={`w-full h-24 p-3 border rounded-xl text-sm bg-slate-50 focus:bg-white focus:border-blue-500 outline-none resize-none transition-all ${
+                      validationErrors.includes('functionalNeeds') ? 'border-rose-500 bg-rose-50 ring-2 ring-rose-500/20 shadow-[0_0_0_2px_rgba(244,63,94,0.1)]' : 'border-slate-200'
+                    }`} 
+                  />
                 ) : (
                   <p className="text-sm text-slate-600 bg-slate-50 p-4 rounded-xl leading-relaxed border border-slate-100">
                     {lead.functionalNeeds || '未填写'}
@@ -338,9 +480,15 @@ export default function LeadDetails() {
                 )}
               </div>
               <div>
-                <h3 className="text-sm font-bold text-slate-700 mb-2">其他备注说明：</h3>
+                <h3 className={`text-sm font-bold mb-2 ${validationErrors.includes('remarks') ? 'text-rose-500' : 'text-slate-700'}`}>其他备注说明：</h3>
                 {isEditing ? (
-                  <textarea value={editedLead.remarks} onChange={e => setEditedLead({...editedLead, remarks: e.target.value})} className="w-full h-24 p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:border-blue-500 outline-none resize-none" />
+                  <textarea 
+                    value={editedLead.remarks} 
+                    onChange={e => setEditedLead({...editedLead, remarks: e.target.value})} 
+                    className={`w-full h-24 p-3 border rounded-xl text-sm bg-slate-50 focus:bg-white focus:border-blue-500 outline-none resize-none transition-all ${
+                      validationErrors.includes('remarks') ? 'border-rose-500 bg-rose-50 ring-2 ring-rose-500/20 shadow-[0_0_0_2px_rgba(244,63,94,0.1)]' : 'border-slate-200'
+                    }`} 
+                  />
                 ) : (
                   <p className="text-sm text-slate-600 bg-slate-50 p-4 rounded-xl leading-relaxed border border-slate-100">
                     {lead.remarks || '无'}
@@ -352,17 +500,31 @@ export default function LeadDetails() {
           
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-wrap gap-x-12 gap-y-4">
             <div>
-              <p className="text-sm text-slate-400 mb-1">线索来源</p>
+              <p className={`text-sm mb-1 ${validationErrors.includes('source') ? 'text-rose-500 font-bold' : 'text-slate-400'}`}>线索来源</p>
               {isEditing ? (
-                <input type="text" value={editedLead.source} onChange={e => setEditedLead({...editedLead, source: e.target.value})} className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:border-blue-500 outline-none max-w-[150px]" />
+                <input 
+                  type="text" 
+                  value={editedLead.source} 
+                  onChange={e => setEditedLead({...editedLead, source: e.target.value})} 
+                  className={`w-full px-3 py-1.5 border rounded-lg text-sm bg-slate-50 focus:bg-white focus:border-blue-500 outline-none max-w-[150px] transition-all ${
+                    validationErrors.includes('source') ? 'border-rose-500 bg-rose-50 ring-2 ring-rose-500/20' : 'border-slate-200'
+                  }`} 
+                />
               ) : (
                 <p className="font-medium text-slate-800">{lead.source}</p>
               )}
             </div>
             <div>
-              <p className="text-sm text-slate-400 mb-1">提供人</p>
+              <p className={`text-sm mb-1 ${validationErrors.includes('provider') ? 'text-rose-500 font-bold' : 'text-slate-400'}`}>提供人</p>
               {isEditing ? (
-                <input type="text" value={editedLead.provider} onChange={e => setEditedLead({...editedLead, provider: e.target.value})} className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:border-blue-500 outline-none max-w-[150px]" />
+                <input 
+                  type="text" 
+                  value={editedLead.provider} 
+                  onChange={e => setEditedLead({...editedLead, provider: e.target.value})} 
+                  className={`w-full px-3 py-1.5 border rounded-lg text-sm bg-slate-50 focus:bg-white focus:border-blue-500 outline-none max-w-[150px] transition-all ${
+                    validationErrors.includes('provider') ? 'border-rose-500 bg-rose-50 ring-2 ring-rose-500/20' : 'border-slate-200'
+                  }`} 
+                />
               ) : (
                 <p className="font-medium text-slate-800">{lead.provider}</p>
               )}
@@ -538,7 +700,7 @@ export default function LeadDetails() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                 <input 
                   type="text" 
-                  placeholder="搜索人员姓名或职位..."
+                  placeholder="搜索手机号、姓名"
                   value={assignSearch}
                   onChange={(e) => setAssignSearch(e.target.value)}
                   className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-blue-500 focus:bg-white outline-none transition-colors"
@@ -546,13 +708,22 @@ export default function LeadDetails() {
               </div>
 
               <div>
-                <p className="text-xs font-bold text-slate-400 mb-2">已选择分配人员 ({currentAssignees.length})</p>
-                <div className="flex flex-wrap gap-2">
+                <p className={`text-xs font-bold mb-2 transition-colors ${showAssignError && currentAssignees.length === 0 ? 'text-rose-500' : 'text-slate-400'}`}>
+                  已选择分配人员 ({currentAssignees.length})
+                </p>
+                <div className={`flex flex-wrap gap-2 p-2 rounded-xl transition-all border ${
+                  showAssignError && currentAssignees.length === 0 
+                    ? 'bg-rose-50 border-rose-200 ring-4 ring-rose-500/5' 
+                    : 'border-transparent'
+                }`}>
                   {currentAssignees.length > 0 ? currentAssignees.map(name => (
-                    <div key={name} className="flex items-center gap-1.5 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-lg">
+                    <div key={name} className="flex items-center gap-1.5 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-lg border-2 border-blue-200">
                       <span className="text-xs font-bold text-blue-700">{name}</span>
                       <button 
-                        onClick={() => toggleAssignee(name)}
+                        onClick={() => {
+                          toggleAssignee(name);
+                          if (currentAssignees.length <= 1) setShowAssignError(true);
+                        }}
                         className="text-blue-400 hover:text-red-500 transition-colors"
                         title="取消分配"
                       >
@@ -560,7 +731,11 @@ export default function LeadDetails() {
                       </button>
                     </div>
                   )) : (
-                    <span className="text-xs text-slate-400 italic py-1.5">未分配任何人员</span>
+                    <div className="w-full">
+                      <span className={`text-xs italic py-1.5 block ${showAssignError ? 'text-rose-500 font-bold' : 'text-slate-400'}`}>
+                        {showAssignError ? '⚠️ 请至少选择一位分配人员' : '未分配任何人员'}
+                      </span>
+                    </div>
                   )}
                 </div>
               </div>
@@ -584,7 +759,7 @@ export default function LeadDetails() {
                         </div>
                         <div>
                           <div className="text-sm font-bold text-slate-800">{emp.name}</div>
-                          <div className="text-[10px] text-slate-500">{emp.role}</div>
+                          <div className="text-[10px] text-slate-500">{emp.phone}</div>
                         </div>
                       </div>
                       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
@@ -607,6 +782,7 @@ export default function LeadDetails() {
               <button 
                 onClick={() => {
                   setCurrentAssignees(lead.assignedTo); // Reset
+                  setShowAssignError(false);
                   setShowAssignModal(false);
                 }}
                 className="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-200 rounded-xl transition-colors"
@@ -614,15 +790,26 @@ export default function LeadDetails() {
                 取消
               </button>
               <button 
-                onClick={() => {
-                  lead.assignedTo = currentAssignees;
-                  setShowAssignModal(false);
-                }}
+                onClick={handleConfirmAssign}
                 className="px-6 py-2 bg-blue-600 text-white text-sm font-bold rounded-xl shadow-sm hover:bg-blue-700 transition-all"
               >
                 确认分配
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Feedback */}
+      {toast && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-bottom-4 duration-300">
+          <div className={`px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3 border ${
+            toast.type === 'success' 
+              ? 'bg-emerald-50 border-emerald-100 text-emerald-600' 
+              : 'bg-blue-50 border-blue-100 text-blue-600'
+          }`}>
+            <CheckCircle size={20} className={toast.type === 'success' ? "text-emerald-500" : "text-blue-500"} />
+            <span className="font-bold text-sm tracking-wide">{toast.message}</span>
           </div>
         </div>
       )}

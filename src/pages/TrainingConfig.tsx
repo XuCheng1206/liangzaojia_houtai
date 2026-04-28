@@ -9,7 +9,8 @@ import {
   X, 
   Save,
   PlayCircle,
-  FileText
+  FileText,
+  AlertTriangle
 } from 'lucide-react';
 
 interface TrainingItem {
@@ -35,10 +36,18 @@ export default function TrainingConfig() {
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
+  const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ 
+    id: string, 
+    title: string, 
+    type: 'training' | 'category',
+    isWarning?: boolean 
+  } | null>(null);
 
   const handleAddCategory = () => {
     if (newCatName.trim() && !categories.includes(newCatName.trim())) {
-      setCategories([...categories, newCatName.trim()]);
+      setCategories(prev => [...prev, newCatName.trim()]);
       setCategory(newCatName.trim());
       setNewCatName('');
       setShowAddCategory(false);
@@ -49,16 +58,38 @@ export default function TrainingConfig() {
     // Check if any training items are using this category
     const isUsed = trainingList.some(item => item.category === catToDelete);
     if (isUsed) {
-      alert(`无法删除：分类“${catToDelete}”下已有培训内容，请变更相关内容的分类后再删除。`);
+      setDeleteConfirm({ 
+        id: catToDelete, 
+        title: catToDelete, 
+        type: 'category', 
+        isWarning: true 
+      });
       return;
     }
 
-    if (window.confirm(`确定要删除分类“${catToDelete}”吗？`)) {
-      setCategories(categories.filter(c => c !== catToDelete));
-      if (category === catToDelete) {
-        setCategory(categories[0] || '');
+    setDeleteConfirm({ id: catToDelete, title: catToDelete, type: 'category', isWarning: false });
+  };
+
+  const confirmDelete = () => {
+    if (!deleteConfirm) return;
+
+    if (deleteConfirm.type === 'training') {
+      setTrainingList(prev => prev.filter(item => item.id !== deleteConfirm.id));
+      if (editingId === deleteConfirm.id) {
+        handleCancelEdit();
+      }
+    } else {
+      setCategories(prev => prev.filter(c => c !== deleteConfirm.id));
+      if (category === deleteConfirm.id) {
+        setCategory(categories.find(c => c !== deleteConfirm.id) || '');
       }
     }
+    setDeleteConfirm(null);
+  };
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
   };
 
   const [trainingList, setTrainingList] = useState<TrainingItem[]>([
@@ -66,7 +97,7 @@ export default function TrainingConfig() {
       id: 'T1001',
       title: '水电施工标准工艺详解',
       category: '工艺标准',
-      videoUrl: '#',
+      videoUrl: 'https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4',
       coverUrl: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?q=80&w=2070&auto=format&fit=crop',
       createdAt: '2026-04-20'
     },
@@ -74,7 +105,7 @@ export default function TrainingConfig() {
       id: 'T1002',
       title: '职业道德与良知养成',
       category: '良知素养',
-      videoUrl: '#',
+      videoUrl: 'https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4',
       coverUrl: 'https://images.unsplash.com/photo-1521791136064-7986c2923216?q=80&w=2069&auto=format&fit=crop',
       createdAt: '2026-04-21'
     }
@@ -111,6 +142,7 @@ export default function TrainingConfig() {
     // Clear specifically uploaded files as we are using URLs for existing items
     setVideoFile(null);
     setCoverFile(null);
+    setShowErrors(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -121,18 +153,26 @@ export default function TrainingConfig() {
     setVideoFile(null);
     setCoverFile(null);
     setCoverPreview(null);
+    setShowErrors(false);
   };
 
   const handleSave = () => {
-    if (!title) {
-      alert('请填写培训标题');
+    // 验证所有字段是否填写完成
+    const isTitleValid = !!title.trim();
+    const isCategoryValid = !!category;
+    // 封面：有新上传的文件，或者已有预览图
+    const hasCover = !!coverFile || !!coverPreview;
+    // 视频：新上传的文件，或者编辑模式下已有视频 URL
+    const currentItem = trainingList.find(i => i.id === editingId);
+    const hasVideo = !!videoFile || (!!editingId && currentItem && currentItem.videoUrl && currentItem.videoUrl !== '#');
+
+    if (!isTitleValid || !isCategoryValid || !hasCover || !hasVideo) {
+      setShowErrors(true);
+      showToast('需要填写完成才能发布', 'error');
       return;
     }
 
-    if (!editingId && (!videoFile || !coverFile)) {
-      alert('请上传视频和封面');
-      return;
-    }
+    setShowErrors(false);
 
     if (editingId) {
       setTrainingList(trainingList.map(item => 
@@ -141,12 +181,11 @@ export default function TrainingConfig() {
               ...item, 
               title, 
               category, 
-              coverUrl: coverFile ? (coverPreview || '') : item.coverUrl,
+              coverUrl: coverFile ? URL.createObjectURL(coverFile) : item.coverUrl,
               videoUrl: videoFile ? URL.createObjectURL(videoFile) : item.videoUrl
             } 
           : item
       ));
-      alert('修改成功');
     } else {
       const newItem: TrainingItem = {
         id: `T${Date.now()}`,
@@ -157,10 +196,14 @@ export default function TrainingConfig() {
         createdAt: new Date().toISOString().split('T')[0]
       };
       setTrainingList([newItem, ...trainingList]);
-      alert('发布成功');
     }
     
+    showToast('发布成功', 'success');
     handleCancelEdit();
+  };
+
+  const handleDeleteTraining = (id: string, title: string) => {
+    setDeleteConfirm({ id, title, type: 'training' });
   };
 
   return (
@@ -204,10 +247,20 @@ export default function TrainingConfig() {
                 <input 
                   type="text" 
                   value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  onChange={(e) => {
+                    setTitle(e.target.value);
+                    if (showErrors) setShowErrors(false);
+                  }}
                   placeholder="请输入培训课程名称"
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
+                  className={`w-full px-4 py-2.5 bg-slate-50 border rounded-xl text-sm outline-none transition-all ${
+                    showErrors && !title.trim() 
+                      ? 'border-rose-500 ring-4 ring-rose-500/10' 
+                      : 'border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10'
+                  }`}
                 />
+                {showErrors && !title.trim() && (
+                  <p className="text-[10px] text-rose-500 font-bold mt-1.5 ml-1">请填写培训标题</p>
+                )}
               </div>
 
               {/* 分类 */}
@@ -278,9 +331,16 @@ export default function TrainingConfig() {
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">上传封面</label>
                 <div 
-                  onClick={() => coverInputRef.current?.click()}
+                  onClick={() => {
+                    coverInputRef.current?.click();
+                    if (showErrors) setShowErrors(false);
+                  }}
                   className={`group relative aspect-video rounded-2xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${
-                    coverPreview ? 'border-blue-200 bg-blue-50/20' : 'border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-300'
+                    (showErrors && !coverFile && !coverPreview)
+                      ? 'border-rose-500 bg-rose-50/30'
+                      : coverPreview 
+                        ? 'border-blue-200 bg-blue-50/20' 
+                        : 'border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-300'
                   }`}
                 >
                   {coverPreview ? (
@@ -310,9 +370,16 @@ export default function TrainingConfig() {
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">上传视频</label>
                 <div 
-                  onClick={() => videoInputRef.current?.click()}
+                  onClick={() => {
+                    videoInputRef.current?.click();
+                    if (showErrors) setShowErrors(false);
+                  }}
                   className={`px-4 py-4 rounded-2xl border-2 border-dashed flex items-center gap-3 cursor-pointer transition-all ${
-                    videoFile ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-300 text-slate-500'
+                    (showErrors && !videoFile && (!editingId || (trainingList.find(i => i.id === editingId)?.videoUrl === '#')))
+                      ? 'border-rose-500 bg-rose-50 text-rose-700'
+                      : videoFile 
+                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700' 
+                        : 'border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-300 text-slate-500'
                   }`}
                 >
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${videoFile ? 'bg-white shadow-sm' : 'bg-white'}`}>
@@ -339,8 +406,7 @@ export default function TrainingConfig() {
                 onClick={handleSave}
                 className="w-full py-3 bg-blue-600 text-white rounded-2xl font-bold text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 mt-4"
               >
-                <Save size={18} />
-                发布并保存
+                发布
               </button>
             </div>
           </div>
@@ -388,13 +454,16 @@ export default function TrainingConfig() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => handleEdit(item)}
-                  className="text-[11px] font-bold text-blue-600 hover:text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-all"
-                >
-                  编辑
-                </button>
-                    <button className="w-8 h-8 rounded-lg text-slate-400 flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition-all">
+                    <button 
+                      onClick={() => handleEdit(item)}
+                      className="text-[11px] font-bold text-blue-600 hover:text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-all"
+                    >
+                      编辑
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteTraining(item.id, item.title)}
+                      className="w-8 h-8 rounded-lg text-slate-400 flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition-all"
+                    >
                       <X size={16} />
                     </button>
                   </div>
@@ -411,6 +480,80 @@ export default function TrainingConfig() {
           </div>
         </div>
       </div>
+
+      {/* 删除确认 / 警告对话框 */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-sm p-6 animate-in zoom-in-95 duration-200">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${
+              deleteConfirm.isWarning ? 'bg-amber-50 text-amber-500' : 'bg-rose-50 text-rose-500'
+            }`}>
+              <AlertTriangle size={24} />
+            </div>
+            
+            <h3 className="text-lg font-bold text-slate-900 mb-2">
+              {deleteConfirm.isWarning ? '无法删除分类' : '确认删除'}
+            </h3>
+            
+            <p className="text-slate-500 text-sm leading-relaxed mb-6">
+              {deleteConfirm.isWarning ? (
+                <>
+                  分类 <span className="font-bold text-slate-800">“{deleteConfirm.title}”</span> 下已有培训内容。请先变更相关视频的分类后再执行删除操作。
+                </>
+              ) : (
+                <>
+                  您确定要删除 {deleteConfirm.type === 'category' ? '分类' : '培训内容'} <span className="font-bold text-slate-800">“{deleteConfirm.title}”</span> 吗？
+                  {deleteConfirm.type === 'training' && ' 此操作将无法撤销。'}
+                </>
+              )}
+            </p>
+
+            <div className="flex gap-3">
+              {deleteConfirm.isWarning ? (
+                <button 
+                  onClick={() => setDeleteConfirm(null)}
+                  className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-bold text-sm hover:bg-slate-200 transition-all"
+                >
+                  我知道了
+                </button>
+              ) : (
+                <>
+                  <button 
+                    onClick={() => setDeleteConfirm(null)}
+                    className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-bold text-sm hover:bg-slate-200 transition-all"
+                  >
+                    取消
+                  </button>
+                  <button 
+                    onClick={confirmDelete}
+                    className="flex-1 py-2.5 rounded-xl bg-rose-600 text-white font-bold text-sm hover:bg-rose-700 transition-all shadow-lg shadow-rose-600/20"
+                  >
+                    确认删除
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast 提示 */}
+      {toast && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-bottom-4 duration-300">
+          <div className={`px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3 border ${
+            toast.type === 'success' 
+              ? 'bg-emerald-50 border-emerald-100 text-emerald-600' 
+              : 'bg-rose-50 border-rose-100 text-rose-600'
+          }`}>
+            {toast.type === 'success' ? (
+              <PlayCircle size={20} className="fill-emerald-600/10" />
+            ) : (
+              <AlertTriangle size={20} className="fill-rose-600/10" />
+            )}
+            <span className="font-bold text-sm">{toast.message}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

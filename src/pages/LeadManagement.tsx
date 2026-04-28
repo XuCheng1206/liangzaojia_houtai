@@ -29,7 +29,7 @@ interface Lead {
 
 const mockLeads: Lead[] = [
   { id: '1', name: '王家梁', source: '百度搜索', phone: '138-xxxx-8888', status: '待对接', assignedTo: '管理员', createdAt: '2026-04-16' },
-  { id: '2', name: '陆美玲', source: '朋友推荐', phone: '139-xxxx-1234', status: '待分配', assignedTo: '李四', createdAt: '2026-04-15' },
+  { id: '2', name: '陆美玲', source: '项目发起人', phone: '139-xxxx-1234', status: '待分配', assignedTo: '李四', createdAt: '2026-04-15' },
   { id: '3', name: '周杰', source: '抖音广告', phone: '135-xxxx-9999', status: '转化中', assignedTo: '钱七', createdAt: '2026-04-14' },
   { id: '4', name: '曾志伟', source: '线下活动', phone: '137-xxxx-7777', status: '已转化', assignedTo: '李四', createdAt: '2026-04-10' },
   { id: '5', name: '刘德华', source: '官网留言', phone: '131-xxxx-0000', status: '已关闭', assignedTo: '-', createdAt: '2026-04-16' },
@@ -68,7 +68,7 @@ export default function LeadManagement() {
               <Search size={16} className="text-slate-400" />
               <input 
                 type="text" 
-                placeholder="搜索姓名、电话..." 
+                placeholder="搜索客户姓名、电话..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="bg-transparent border-none outline-none text-[13px] ml-2 w-full text-slate-700 placeholder:text-slate-400"

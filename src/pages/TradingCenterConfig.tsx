@@ -220,7 +220,7 @@ export default function TradingCenterConfig() {
           <div className={`p-1 rounded ${activeTab === 'b' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'}`}>
             <ShoppingBag size={14} />
           </div>
-          B端交易中心 (师傅/发起人端)
+          B端交易中心 (师傅/项目发起人端)
         </button>
         <button 
           onClick={() => setActiveTab('c')}
