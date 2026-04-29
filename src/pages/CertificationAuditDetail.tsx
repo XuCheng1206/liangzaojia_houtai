@@ -417,7 +417,7 @@ export default function CertificationAuditDetail() {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <UploadModule icon={<ImageIcon size={14} />} title="身份证正面" desc="已上传，点击重传" hasImage={cert.idCardFront} />
             <UploadModule icon={<ImageIcon size={14} />} title="身份证反面" desc="已上传，点击重传" hasImage={cert.idCardBack} />
-            <UploadModule icon={<FileCheck2 size={14} />} title="执业证书" desc="已上传，点击重传" hasImage={cert.skillCertImg} />
+            <UploadModule icon={<FileCheck2 size={14} />} title="手持身份证" desc="已上传，点击重传" hasImage={cert.skillCertImg} />
           </div>
         </SectionCard>
 
