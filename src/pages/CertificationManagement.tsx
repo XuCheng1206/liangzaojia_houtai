@@ -58,9 +58,20 @@ const mockCerts: Certification[] = [
     role: '工长',
     userType: 'Enterprise', 
     certType: 'Skill', 
-    status: 'Approved', 
+    status: 'Pending', 
     submittedAt: '2026-04-14 14:00',
     experienceYears: 12
+  },
+  {
+    id: 'C1005',
+    userName: '王水电',
+    phone: '138****3344',
+    role: '水电工',
+    userType: 'Worker',
+    certType: 'Skill',
+    status: 'Pending',
+    submittedAt: '2026-04-15 10:00',
+    experienceYears: 10
   },
   { 
     id: 'C1004', 
@@ -73,17 +84,85 @@ const mockCerts: Certification[] = [
     submittedAt: '2026-04-16 15:45',
     experienceYears: 10
   },
+  {
+    id: 'C1006',
+    userName: '刘设计',
+    phone: '135****4444',
+    role: '设计师',
+    userType: 'Studio',
+    certType: 'Identity',
+    status: 'Approved',
+    submittedAt: '2026-04-10 15:45',
+    experienceYears: 6
+  },
+  {
+    id: 'C1007',
+    userName: '李工长',
+    phone: '138****5555',
+    role: '工长',
+    userType: 'Enterprise',
+    certType: 'Skill',
+    status: 'Approved',
+    submittedAt: '2026-04-11 10:00',
+    experienceYears: 15
+  },
+  {
+    id: 'C1008',
+    userName: '赵泥瓦',
+    phone: '139****6666',
+    role: '泥瓦工',
+    userType: 'Worker',
+    certType: 'Skill',
+    status: 'Approved',
+    submittedAt: '2026-04-12 11:00',
+    experienceYears: 10
+  },
+  {
+    id: 'C1009',
+    userName: '孙设计',
+    phone: '136****7777',
+    role: '设计师',
+    userType: 'Studio',
+    certType: 'Identity',
+    status: 'Rejected',
+    submittedAt: '2026-04-10 10:00',
+    experienceYears: 5
+  },
+  {
+    id: 'C1010',
+    userName: '周工长',
+    phone: '137****8888',
+    role: '工长',
+    userType: 'Enterprise',
+    certType: 'Skill',
+    status: 'Rejected',
+    submittedAt: '2026-04-11 11:00',
+    experienceYears: 12
+  },
+  {
+    id: 'C1011',
+    userName: '吴油漆',
+    phone: '138****9999',
+    role: '油漆工',
+    userType: 'Worker',
+    certType: 'Skill',
+    status: 'Rejected',
+    submittedAt: '2026-04-12 14:00',
+    experienceYears: 8
+  }
 ];
 
 export default function CertificationManagement() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
+  const [categoryFilter, setCategoryFilter] = useState('全部');
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredCerts = mockCerts.filter(c => {
     const matchesTab = activeTab === 'all' || c.status.toLowerCase() === activeTab;
     const matchesSearch = c.userName.includes(searchTerm) || c.id.includes(searchTerm) || c.role.includes(searchTerm);
-    return matchesTab && matchesSearch;
+    const matchesCategory = categoryFilter === '全部' || c.role === categoryFilter;
+    return matchesTab && matchesSearch && matchesCategory;
   });
 
   return (
@@ -102,20 +181,36 @@ export default function CertificationManagement() {
             培训学习配置
           </button>
         </div>
-        <div className="flex bg-white rounded-xl p-1 border border-slate-200 shadow-sm">
-          {(['all', 'pending', 'approved', 'rejected'] as const).map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                activeTab === tab 
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' 
-                  : 'text-slate-500 hover:bg-slate-50'
-              }`}
-            >
-              {tab === 'all' ? '全部' : tab === 'pending' ? '待审核' : tab === 'approved' ? '已通过' : '未通过'}
-            </button>
-          ))}
+        <div className="flex gap-4 items-center">
+          <select 
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-[13px] font-bold text-slate-600 outline-none hover:bg-slate-50 transition-all shadow-sm"
+          >
+            <option value="全部">全部工种/角色</option>
+            <option value="工长">工长</option>
+            <option value="设计师">设计师</option>
+            <option value="拆除工">拆除工</option>
+            <option value="水电工">水电工</option>
+            <option value="木工">木工</option>
+            <option value="泥瓦工">泥瓦工</option>
+            <option value="油漆工">油漆工</option>
+          </select>
+          <div className="flex bg-white rounded-xl p-1 border border-slate-200 shadow-sm">
+            {(['all', 'pending', 'approved', 'rejected'] as const).map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  activeTab === tab 
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' 
+                    : 'text-slate-500 hover:bg-slate-50'
+                }`}
+              >
+                {tab === 'all' ? '全部' : tab === 'pending' ? '审核中' : tab === 'approved' ? '已通过' : '未通过'}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -144,7 +239,6 @@ export default function CertificationManagement() {
               <tr className="bg-white border-b border-slate-100">
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">申请信息</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">工种角色</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">认证项目</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">从业年限</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">申请时间</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">当前状态</th>
@@ -173,12 +267,6 @@ export default function CertificationManagement() {
                     }`}>
                       {cert.role}
                     </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-1.5 text-slate-600 font-medium text-sm">
-                      <FileText size={14} className="text-slate-300" />
-                      {cert.certType === 'Skill' ? '技能证书认证' : cert.certType === 'Identity' ? '实名身份认证' : '安全合规认证'}
-                    </div>
                   </td>
                   <td className="px-6 py-4 text-sm font-bold text-slate-700">{cert.experienceYears} 年</td>
                   <td className="px-6 py-4 text-sm text-slate-500">{cert.submittedAt}</td>
@@ -213,7 +301,7 @@ export default function CertificationManagement() {
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan={7} className="px-6 py-20 text-center text-slate-400 italic">
+                  <td colSpan={6} className="px-6 py-20 text-center text-slate-400 italic">
                     暂无待处理的审核申请
                   </td>
                 </tr>

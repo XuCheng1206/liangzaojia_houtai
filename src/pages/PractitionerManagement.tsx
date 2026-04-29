@@ -13,10 +13,12 @@ import {
   UserPlus
 } from 'lucide-react';
 
+type PractitionerRole = '工长' | '设计师' | '拆除工' | '水电工' | '木工' | '泥瓦工' | '油漆工';
+
 interface Practitioner {
   id: string;
   name: string;
-  category: string;
+  category: PractitionerRole;
   level: 'Junior' | 'Senior' | 'Expert';
   rating: number;
   location: string;
@@ -26,16 +28,19 @@ interface Practitioner {
 
 const mockPractitioners: Practitioner[] = [
   { id: 'P001', name: '王木工', category: '木工', level: 'Expert', rating: 4.9, location: '上海/浦东', projectsCount: 124, status: 'Working' },
-  { id: 'P002', name: '李瓦工', category: '瓦工', level: 'Senior', rating: 4.7, location: '上海/静安', projectsCount: 86, status: 'Available' },
+  { id: 'P002', name: '李瓦工', category: '泥瓦工', level: 'Senior', rating: 4.7, location: '上海/静安', projectsCount: 86, status: 'Available' },
   { id: 'P003', name: '张水电', category: '水电工', level: 'Senior', rating: 4.8, location: '上海/徐汇', projectsCount: 92, status: 'Resting' },
   { id: 'P004', name: '赵油漆', category: '油漆工', level: 'Junior', rating: 4.5, location: '上海/闵行', projectsCount: 34, status: 'Available' },
-  { id: 'P005', name: '刘小龙', category: '全屋定制', level: 'Expert', rating: 5.0, location: '上海/青浦', projectsCount: 210, status: 'Working' },
+  { id: 'P005', name: '刘工长', category: '工长', level: 'Expert', rating: 5.0, location: '上海/青浦', projectsCount: 210, status: 'Working' },
+  { id: 'P006', name: '陈设计师', category: '设计师', level: 'Expert', rating: 4.9, location: '上海/黄浦', projectsCount: 156, status: 'Available' },
+  { id: 'P007', name: '孙拆除', category: '拆除工', level: 'Senior', rating: 4.6, location: '上海/普陀', projectsCount: 78, status: 'Working' },
 ];
 
 export default function PractitionerManagement() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('全部');
+  const [categoryFilter, setCategoryFilter] = useState('全部');
 
   const filteredPractitioners = mockPractitioners.filter(p => {
     const matchesSearch = p.name.includes(searchTerm) || p.category.includes(searchTerm);
@@ -43,7 +48,8 @@ export default function PractitionerManagement() {
       (statusFilter === '承接中' && p.status === 'Working') ||
       (statusFilter === '可预约' && p.status === 'Available') ||
       (statusFilter === '休息中' && p.status === 'Resting');
-    return matchesSearch && matchesStatus;
+    const matchesCategory = categoryFilter === '全部' || p.category === categoryFilter;
+    return matchesSearch && matchesStatus && matchesCategory;
   });
 
   return (
@@ -71,6 +77,20 @@ export default function PractitionerManagement() {
           />
         </div>
         <div className="flex gap-2">
+          <select 
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="bg-white border border-slate-200 rounded px-3 py-1.5 text-[13px] font-medium text-slate-600 outline-none hover:bg-slate-50 transition-all"
+          >
+            <option value="全部">全部工种</option>
+            <option value="工长">工长</option>
+            <option value="设计师">设计师</option>
+            <option value="拆除工">拆除工</option>
+            <option value="水电工">水电工</option>
+            <option value="木工">木工</option>
+            <option value="泥瓦工">泥瓦工</option>
+            <option value="油漆工">油漆工</option>
+          </select>
           <select 
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}

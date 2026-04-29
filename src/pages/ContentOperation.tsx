@@ -76,8 +76,8 @@ const MOCK_CONTENT: ContentItem[] = [
     title: '智慧家居：未来的居住方式',
     type: 'graphic',
     author: '张技师',
-    publishStatus: 'draft',
-    publishTarget: { cities: [], sides: [] },
+    publishStatus: 'published',
+    publishTarget: { cities: ['1', '2'], sides: ['C'] },
     createdAt: '2026-04-22',
     coverImage: 'https://images.unsplash.com/photo-1558002038-1055907df827?q=80&w=2070&auto=format&fit=crop'
   },
@@ -116,7 +116,7 @@ const MOCK_CONTENT: ContentItem[] = [
     title: '别墅软装：提升质感的5个细节',
     type: 'graphic',
     author: '李经理',
-    publishStatus: 'scheduled',
+    publishStatus: 'published',
     publishTarget: { cities: ['1', '2'], sides: ['C'] },
     createdAt: '2026-04-25',
     coverImage: 'https://images.unsplash.com/photo-1616489953149-8e7c09930777?q=80&w=2070&auto=format&fit=crop'
@@ -532,20 +532,8 @@ export default function ContentOperation() {
                     <Globe size={12} className="text-blue-500" />
                     发布中心
                   </div>
-                  <div className="flex -space-x-1">
-                    {item.publishTarget.cities.slice(0, 3).map(cityId => (
-                      <div key={cityId} className="w-5 h-5 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[8px] font-bold text-slate-600">
-                        {MOCK_CITIES.find(c => c.id === cityId)?.name[0]}
-                      </div>
-                    ))}
-                    {item.publishTarget.cities.length > 3 && (
-                      <div className="w-5 h-5 rounded-full border-2 border-white bg-slate-50 flex items-center justify-center text-[8px] font-bold text-slate-400">
-                        +{item.publishTarget.cities.length - 3}
-                      </div>
-                    )}
-                    {item.publishTarget.cities.length === 0 && (
-                      <span className="text-[10px] text-slate-300 font-medium italic">未同步站点</span>
-                    )}
+                  <div className="text-[11px] font-black text-slate-600">
+                    {item.publishTarget.cities.length} 个城市交易中心
                   </div>
                 </div>
 
@@ -1014,7 +1002,7 @@ export default function ContentOperation() {
                         同步城市中心
                       </h3>
                       <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-full">
-                        共 {previewItem.publishTarget.cities.length} 个城市
+                        共 {previewItem.publishTarget.cities.length} 个城市交易中心
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-2">
